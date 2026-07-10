@@ -18,7 +18,7 @@ export const Sidebar = () => {
           <Tooltip key={item.to}>
             <TooltipTrigger>
               <RouteLink
-                to={item.to}
+                to={item.to as any}
                 activeOptions={{ exact: true }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:text-white hover:bg-emerald-500/10 active:scale-95 [&.active]:bg-emerald-500 [&.active]:text-white shadow-emerald-500/20"
               >
@@ -34,7 +34,7 @@ export const Sidebar = () => {
         <Tooltip>
           <TooltipTrigger>
             <RouteLink
-              to="/app/settings"
+              to={"/app/settings" as any}
               className="flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:text-white hover:bg-emerald-500/10 active:scale-95 [&.active]:bg-emerald-500 [&.active]:text-white shadow-emerald-500/20"
             >
               <Settings className="h-5 w-5" />

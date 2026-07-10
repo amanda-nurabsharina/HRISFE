@@ -1,11 +1,7 @@
 import { Outlet } from "@tanstack/react-router";
-
 import { Sidebar } from "./Sidebar";
-
 import profileIcon from "../../assets/react.svg";
-
 import { Footer, Sheet, SheetContent, SheetTrigger } from "../../components/layout";
-
 import {
   Brand,
   Button,
@@ -19,39 +15,8 @@ import {
   RouteLink,
   ThemeToggler,
 } from "../../components/ui";
-
 import { Input } from "../../components/forms";
-
-import { PanelLeft, Search, Settings as SettingsIcon } from "lucide-react";
-
-import { useAppLayout } from "./useAppLayout";
-
-import { Outlet } from "@tanstack/react-router";
-
-import { Sidebar } from "./Sidebar";
-
-import profileIcon from "../../assets/react.svg";
-
-import { Footer, Sheet, SheetContent, SheetTrigger } from "../../components/layout";
-
-import {
-  Brand,
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  LangToggler,
-  RouteLink,
-  ThemeToggler,
-} from "../../components/ui";
-
-import { Input } from "../../components/forms";
-
 import { PanelLeft, Search, LayoutDashboard, Users, Clock, CalendarRange, Settings as SettingsIcon } from "lucide-react";
-
 import { useAppLayout } from "./useAppLayout";
 import { useStore } from "../../store/store";
 
@@ -60,11 +25,11 @@ export const AppLayout = () => {
   const user = useStore((state) => state.user);
 
   const mobileMenuItems = [
-    { to: "/app", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/app/employees", label: "Employees", icon: Users },
-    { to: "/app/attendance", label: "Attendance", icon: Clock },
-    { to: "/app/leaves", label: "Leave Requests", icon: CalendarRange },
-    { to: "/app/settings", label: "Settings", icon: SettingsIcon },
+    { to: "/app" as any, label: "Dashboard", icon: LayoutDashboard },
+    { to: "/app/employees" as any, label: "Employees", icon: Users },
+    { to: "/app/attendance" as any, label: "Attendance", icon: Clock },
+    { to: "/app/leaves" as any, label: "Leave Requests", icon: CalendarRange },
+    { to: "/app/settings" as any, label: "Settings", icon: SettingsIcon },
   ];
 
   return (
