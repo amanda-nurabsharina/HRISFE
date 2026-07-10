@@ -15,27 +15,14 @@ import {
   Map,
   ChevronLeft,
   ChevronRight,
-  Users
+  Users,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { useToast } from "../../components/ui";
+import { useAttendanceQuery, useAttendanceCorrectionMutation } from "../../api/attendance";
+import type { TAttendanceRecord } from "../../api/attendance";
 import workerSelfie from "../../assets/indonesian_worker_selfie.png";
-
-interface AttendanceRecord {
-  id: string;
-  name: string;
-  role: string;
-  avatarInitials: string;
-  shift: string;
-  clockIn: string;
-  clockOut: string;
-  site: string;
-  department: string;
-  latitude: number | null;
-  longitude: number | null;
-  status: "Present" | "Late" | "Absent" | "On Leave";
-  hasOvertime: boolean;
-  correctionReason?: string;
-}
 
 export const Attendance = () => {
   const { toast } = useToast();
@@ -46,118 +33,56 @@ export const Attendance = () => {
   const [selectedDept, setSelectedDept] = React.useState("All Departments");
   const [activeTab, setActiveTab] = React.useState<"ALL" | "Late" | "Absent" | "Leaves" | "Overtime">("ALL");
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [debouncedSearch, setDebouncedSearch] = React.useState("");
 
-  // Attendance Records State
-  const [records, setRecords] = React.useState<AttendanceRecord[]>([
-    { 
-      id: "ATT-1992", 
-      name: "Ahmad Rizki", 
-      role: "Heavy Equipment Operator", 
-      avatarInitials: "AR",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "07:45 AM", 
-      clockOut: "18:00 PM", 
-      site: "Site Alpha", 
-      department: "Operations",
-      latitude: -0.502, 
-      longitude: 101.445,
-      status: "Present",
-      hasOvertime: true
+  // Debounce search input
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const recordsPerPage = 10;
+
+  // Fetch attendance data from real backend API
+  const { 
+    data: attendanceData, 
+    isLoading, 
+    isError, 
+    error,
+    refetch 
+  } = useAttendanceQuery({
+    site: selectedSite,
+    department: selectedDept,
+    search: debouncedSearch,
+  });
+
+  // Correction mutation
+  const correctionMutation = useAttendanceCorrectionMutation({
+    onSuccess: (response) => {
+      toast({
+        title: "Koreksi Absensi Disimpan",
+        description: response.message || `Data kehadiran berhasil diperbarui.`,
+      } as any);
+      handleCloseModal();
     },
-    { 
-      id: "ATT-1993", 
-      name: "Budi Santoso", 
-      role: "Site Supervisor", 
-      avatarInitials: "BS",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "08:15 AM", 
-      clockOut: "18:00 PM", 
-      site: "Site Alpha", 
-      department: "Operations",
-      latitude: -0.504, 
-      longitude: 101.448,
-      status: "Late",
-      hasOvertime: false
-    },
-    { 
-      id: "ATT-1994", 
-      name: "Citra Dewi", 
-      role: "Logistics Admin", 
-      avatarInitials: "CD",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "07:55 AM", 
-      clockOut: "18:00 PM", 
-      site: "Head Office", 
-      department: "HR",
-      latitude: -6.200, 
-      longitude: 106.816,
-      status: "Present",
-      hasOvertime: false
-    },
-    { 
-      id: "ATT-1995", 
-      name: "Doni Pratama", 
-      role: "Truck Driver", 
-      avatarInitials: "DP",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "08:05 AM", 
-      clockOut: "18:00 PM", 
-      site: "Site Beta", 
-      department: "Logistics",
-      latitude: -1.265, 
-      longitude: 116.890,
-      status: "Late",
-      hasOvertime: false
-    },
-    { 
-      id: "ATT-1996", 
-      name: "Eko Wahyudi", 
-      role: "Mechanic", 
-      avatarInitials: "EW",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "07:55 AM", 
-      clockOut: "18:00 PM", 
-      site: "Site Beta", 
-      department: "Engineering",
-      latitude: -0.510, 
-      longitude: 101.440,
-      status: "Present",
-      hasOvertime: true
-    },
-    { 
-      id: "ATT-1997", 
-      name: "Fitriani", 
-      role: "Warehouse Operator", 
-      avatarInitials: "FT",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "-", 
-      clockOut: "-", 
-      site: "Site Alpha", 
-      department: "Operations",
-      latitude: null, 
-      longitude: null,
-      status: "Absent",
-      hasOvertime: false
-    },
-    { 
-      id: "ATT-1998", 
-      name: "Hendra Wijaya", 
-      role: "Welder", 
-      avatarInitials: "HW",
-      shift: "Morning (08:00 - 17:00)", 
-      clockIn: "-", 
-      clockOut: "-", 
-      site: "Site Beta", 
-      department: "Operations",
-      latitude: null, 
-      longitude: null,
-      status: "On Leave",
-      hasOvertime: false
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Koreksi Absensi Gagal",
+        description: "Gagal menyimpan koreksi. Silakan coba lagi.",
+      } as any);
     }
-  ]);
+  });
+
+  // Records from API
+  const records: TAttendanceRecord[] = attendanceData?.results ?? [];
 
   // Modal State
-  const [selectedRecord, setSelectedRecord] = React.useState<AttendanceRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = React.useState<TAttendanceRecord | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
 
   // Edit Form Fields State
@@ -167,7 +92,7 @@ export const Attendance = () => {
   const [editReason, setEditReason] = React.useState("");
 
   // Open Verification Modal
-  const handleOpenVerification = (record: AttendanceRecord) => {
+  const handleOpenVerification = (record: TAttendanceRecord) => {
     setSelectedRecord(record);
     setIsEditing(false);
     
@@ -197,57 +122,64 @@ export const Attendance = () => {
       return;
     }
 
-    // Update records list
-    setRecords(prev => prev.map(rec => {
-      if (rec.id === selectedRecord.id) {
-        return {
-          ...rec,
-          status: editStatus,
-          clockIn: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockIn,
-          clockOut: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockOut,
-          correctionReason: editReason
-        };
-      }
-      return rec;
-    }));
-
-    toast({
-      title: "Koreksi Absensi Disimpan",
-      description: `Data kehadiran ${selectedRecord.name} berhasil diperbarui.`,
-    } as any);
-
-    handleCloseModal();
+    // Submit correction via API
+    correctionMutation.mutate({
+      id: selectedRecord.id,
+      payload: {
+        status: editStatus,
+        clockIn: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockIn,
+        clockOut: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockOut,
+        reason: editReason,
+      },
+    });
   };
 
-  // Filter Logic
+  // Client-side tab filtering (API already handles site/dept/search)
   const filteredRecords = records.filter(rec => {
-    // 1. Tab filtering
     if (activeTab === "Late" && rec.status !== "Late") return false;
     if (activeTab === "Absent" && rec.status !== "Absent") return false;
     if (activeTab === "Leaves" && rec.status !== "On Leave") return false;
     if (activeTab === "Overtime" && !rec.hasOvertime) return false;
-
-    // 2. Search query filtering
-    if (searchQuery && !rec.name.toLowerCase().includes(searchQuery.toLowerCase()) && !rec.role.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-
-    // 3. Dropdowns filtering
-    if (selectedSite !== "All Sites" && rec.site !== selectedSite) return false;
-    if (selectedDept !== "All Departments" && rec.department !== selectedDept) return false;
-
     return true;
   });
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / recordsPerPage));
+  const paginatedRecords = filteredRecords.slice(
+    (currentPage - 1) * recordsPerPage,
+    currentPage * recordsPerPage
+  );
+
+  // Reset page on filter change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedSite, selectedDept, debouncedSearch]);
+
+  // Metrics computed from real data
+  const totalPresent = records.filter(r => r.status === "Present").length;
+  const totalLate = records.filter(r => r.status === "Late").length;
+  const totalAbsent = records.filter(r => r.status === "Absent").length;
 
   return (
     <div className="space-y-6 text-zinc-700 dark:text-zinc-300">
       
       {/* Title */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
-          Site Alpha (Attendance & Tracking)
-        </h1>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">
-          Monitor and manage daily attendance across all sites.
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+            Attendance & Tracking
+          </h1>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            Monitor and manage daily attendance across all sites.
+          </p>
+        </div>
+        <button 
+          onClick={() => void refetch()}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-zinc-500 hover:text-[#282d8d] border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {/* Filter Dropdowns */}
@@ -303,15 +235,18 @@ export const Attendance = () => {
         </div>
       </div>
 
-      {/* Metrics Row */}
+      {/* Metrics Row - Computed from real data */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-5 rounded-2xl shadow-sm flex items-center gap-4">
           <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 flex items-center justify-center">
             <CheckCircle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. On-Time</h3>
-            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">862 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">On-Time</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalPresent} 
+              <span className="text-xs font-semibold text-zinc-400 ml-1">Users</span>
+            </p>
           </div>
         </div>
 
@@ -320,8 +255,11 @@ export const Attendance = () => {
             <Clock className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. Late</h3>
-            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">30 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Late</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalLate} 
+              <span className="text-xs font-semibold text-zinc-400 ml-1">Users</span>
+            </p>
           </div>
         </div>
 
@@ -330,8 +268,11 @@ export const Attendance = () => {
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. Absent</h3>
-            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">8 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Absent</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : totalAbsent} 
+              <span className="text-xs font-semibold text-zinc-400 ml-1">Users</span>
+            </p>
           </div>
         </div>
       </div>
@@ -378,133 +319,190 @@ export const Attendance = () => {
 
         {/* Table Body */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-zinc-50/50 dark:bg-zinc-800/20 text-zinc-400 text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
-                <th className="px-6 py-3.5">Employee</th>
-                <th className="px-6 py-3.5">Shift Info</th>
-                <th className="px-6 py-3.5">Clock In</th>
-                <th className="px-6 py-3.5">Clock Out</th>
-                <th className="px-6 py-3.5">Site Location</th>
-                <th className="px-6 py-3.5">Evidence</th>
-                <th className="px-6 py-3.5 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((row) => (
-                  <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 transition-colors">
-                    
-                    {/* Employee Profile */}
-                    <td className="px-6 py-3.5 flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-indigo-50 dark:bg-zinc-800 flex items-center justify-center font-extrabold text-[#282d8d] dark:text-indigo-400 text-xs shadow-inner">
-                        {row.avatarInitials}
-                      </div>
-                      <div>
-                        <p className="font-bold text-zinc-850 dark:text-zinc-200">{row.name}</p>
-                        <p className="text-[10px] text-zinc-400">{row.role}</p>
-                      </div>
-                    </td>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-[#282d8d]" />
+              <span className="text-xs font-semibold text-zinc-400">Loading attendance records...</span>
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <AlertTriangle className="h-8 w-8 text-red-400" />
+              <span className="text-xs font-semibold text-red-500">
+                {error?.message || "Failed to load attendance data"}
+              </span>
+              <button 
+                onClick={() => void refetch()}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#282d8d] border border-[#282d8d]/30 rounded-xl hover:bg-indigo-50 transition-colors"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Retry</span>
+              </button>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-zinc-50/50 dark:bg-zinc-800/20 text-zinc-400 text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
+                  <th className="px-6 py-3.5">Employee</th>
+                  <th className="px-6 py-3.5">Shift Info</th>
+                  <th className="px-6 py-3.5">Clock In</th>
+                  <th className="px-6 py-3.5">Clock Out</th>
+                  <th className="px-6 py-3.5">Site Location</th>
+                  <th className="px-6 py-3.5">Evidence</th>
+                  <th className="px-6 py-3.5 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
+                {paginatedRecords.length > 0 ? (
+                  paginatedRecords.map((row) => (
+                    <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 transition-colors">
+                      
+                      {/* Employee Profile */}
+                      <td className="px-6 py-3.5 flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-indigo-50 dark:bg-zinc-800 flex items-center justify-center font-extrabold text-[#282d8d] dark:text-indigo-400 text-xs shadow-inner">
+                          {row.avatarInitials}
+                        </div>
+                        <div>
+                          <p className="font-bold text-zinc-850 dark:text-zinc-200">{row.name}</p>
+                          <p className="text-[10px] text-zinc-400">{row.role}</p>
+                        </div>
+                      </td>
 
-                    {/* Shift */}
-                    <td className="px-6 py-3.5 text-zinc-500 dark:text-zinc-400 font-medium">
-                      {row.shift}
-                    </td>
+                      {/* Shift */}
+                      <td className="px-6 py-3.5 text-zinc-500 dark:text-zinc-400 font-medium">
+                        {row.shift}
+                      </td>
 
-                    {/* Clock In */}
-                    <td className="px-6 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-bold ${row.status === "Late" ? "text-red-500" : "text-zinc-850 dark:text-zinc-200"}`}>
-                          {row.clockIn}
-                        </span>
-                        {row.status === "Late" && (
-                          <span className="text-[9px] font-extrabold uppercase bg-red-50 dark:bg-red-950/20 text-red-600 px-2 py-0.5 rounded-full">
-                            Late
+                      {/* Clock In */}
+                      <td className="px-6 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${row.status === "Late" ? "text-red-500" : "text-zinc-850 dark:text-zinc-200"}`}>
+                            {row.clockIn}
                           </span>
-                        )}
-                        {row.status === "Absent" && (
-                          <span className="text-[9px] font-extrabold uppercase bg-red-100 dark:bg-red-950/40 text-red-700 px-2 py-0.5 rounded-full">
-                            Absent
-                          </span>
-                        )}
-                        {row.status === "On Leave" && (
-                          <span className="text-[9px] font-extrabold uppercase bg-blue-50 dark:bg-blue-950/20 text-blue-600 px-2 py-0.5 rounded-full">
-                            On Leave
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                          {row.status === "Late" && (
+                            <span className="text-[9px] font-extrabold uppercase bg-red-50 dark:bg-red-950/20 text-red-600 px-2 py-0.5 rounded-full">
+                              Late
+                            </span>
+                          )}
+                          {row.status === "Absent" && (
+                            <span className="text-[9px] font-extrabold uppercase bg-red-100 dark:bg-red-950/40 text-red-700 px-2 py-0.5 rounded-full">
+                              Absent
+                            </span>
+                          )}
+                          {row.status === "On Leave" && (
+                            <span className="text-[9px] font-extrabold uppercase bg-blue-50 dark:bg-blue-950/20 text-blue-600 px-2 py-0.5 rounded-full">
+                              On Leave
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Clock Out */}
-                    <td className="px-6 py-3.5 font-bold text-zinc-850 dark:text-zinc-200">
-                      {row.clockOut}
-                    </td>
+                      {/* Clock Out */}
+                      <td className="px-6 py-3.5 font-bold text-zinc-850 dark:text-zinc-200">
+                        {row.clockOut}
+                      </td>
 
-                    {/* Site */}
-                    <td className="px-6 py-3.5">
-                      <span className="font-bold text-zinc-700 dark:text-zinc-300">{row.site}</span>
-                      <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">{row.department}</p>
-                    </td>
+                      {/* Site */}
+                      <td className="px-6 py-3.5">
+                        <span className="font-bold text-zinc-700 dark:text-zinc-300">{row.site}</span>
+                        <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">{row.department}</p>
+                      </td>
 
-                    {/* Evidence Photo */}
-                    <td className="px-6 py-3.5">
-                      {row.latitude ? (
+                      {/* Evidence Photo */}
+                      <td className="px-6 py-3.5">
+                        {row.latitude ? (
+                          <button 
+                            onClick={() => handleOpenVerification(row)}
+                            className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 hover:text-[#282d8d] dark:text-zinc-400 dark:hover:text-white transition-colors"
+                          >
+                            <Camera className="h-3.5 w-3.5" />
+                            <span className="underline">View Photo</span>
+                          </button>
+                        ) : (
+                          <span className="text-zinc-400 font-medium">-</span>
+                        )}
+                      </td>
+
+                      {/* Eye Action */}
+                      <td className="px-6 py-3.5 text-center">
                         <button 
                           onClick={() => handleOpenVerification(row)}
-                          className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 hover:text-[#282d8d] dark:text-zinc-400 dark:hover:text-white transition-colors"
+                          className="p-1.5 border border-zinc-100 hover:border-zinc-250 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-all duration-150"
+                          title="Verify Attendance"
                         >
-                          <Camera className="h-3.5 w-3.5" />
-                          <span className="underline">View Photo</span>
+                          <Eye className="h-4 w-4" />
                         </button>
-                      ) : (
-                        <span className="text-zinc-400 font-medium">-</span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Eye Action */}
-                    <td className="px-6 py-3.5 text-center">
-                      <button 
-                        onClick={() => handleOpenVerification(row)}
-                        className="p-1.5 border border-zinc-100 hover:border-zinc-250 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-all duration-150"
-                        title="Verify Attendance"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-10 text-center text-zinc-400 font-medium">
+                      No attendance records found.
                     </td>
-
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-zinc-400 font-medium">
-                    No attendance records found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] font-bold text-zinc-400">
-          <span>Page 1 of 10</span>
-          <div className="flex items-center gap-1">
-            <button className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
-            </button>
-            <button className="h-7 w-7 flex items-center justify-center bg-[#282d8d] text-white rounded-xl">1</button>
-            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">2</button>
-            <span className="px-1">...</span>
-            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">8</button>
-            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">9</button>
-            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">10</button>
-            <button className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
-              <span>Next</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+        {!isLoading && !isError && (
+          <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] font-bold text-zinc-400">
+            <span>
+              Page {currentPage} of {totalPages} 
+              <span className="text-zinc-300 dark:text-zinc-600 ml-2">
+                ({filteredRecords.length} records)
+              </span>
+            </span>
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Back</span>
+              </button>
+
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <button 
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`h-7 w-7 flex items-center justify-center rounded-xl ${
+                      currentPage === pageNum 
+                        ? "bg-[#282d8d] text-white" 
+                        : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500 disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <span>Next</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 
@@ -562,7 +560,7 @@ export const Attendance = () => {
             {/* Modal Body / Multi-State view */}
             <div className="flex-1 overflow-y-auto pr-1">
               {!isEditing ? (
-                /* Verification Details (Screenshot 2 view) */
+                /* Verification Details */
                 <div className="grid gap-6 md:grid-cols-2">
                   
                   {/* Live Capture (Portraits) */}
@@ -740,9 +738,14 @@ export const Attendance = () => {
                   </button>
                   <button 
                     onClick={handleSaveCorrection}
-                    className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-green-900/10"
+                    disabled={correctionMutation.isPending}
+                    className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-green-900/10 disabled:opacity-60"
                   >
-                    <Check className="h-4 w-4" />
+                    {correctionMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
                     <span>Simpan Koreksi (Save Correction)</span>
                   </button>
                 </>
