@@ -1,4 +1,3 @@
-import { Languages } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { useTranslation } from "react-i18next";
@@ -36,7 +35,9 @@ export function LangToggler() {
           variant="outline"
           size="icon"
         >
-          <Languages className="icon" />
+          <span className="text-[11px] font-black text-[#282d8d] dark:text-indigo-400">
+            {currentLang === "id-ID" ? "ID" : "EN"}
+          </span>
           <span className="sr-only">{t("iconLabel")}</span>
         </Button>
       </DropdownMenuTrigger>
