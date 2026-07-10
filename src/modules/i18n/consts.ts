@@ -5,9 +5,9 @@ export const LANGS_MAP = {
     label: "English",
     value: "en-US",
   },
-  jaJP: {
-    label: "日本語",
-    value: "ja-JP",
+  idID: {
+    label: "Bahasa Indonesia",
+    value: "id-ID",
   },
 } as const;
 
