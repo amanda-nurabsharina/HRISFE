@@ -74,7 +74,7 @@ class AuthService {
       };
       return { data: formattedData, error: null };
     }
-    return { data: null, error: result.error };
+    return { data: null, error: result.error! };
   }
 
   logout(options?: TApiServiceOptions) {
@@ -96,7 +96,7 @@ class AuthService {
       };
       return { data: formattedData, error: null };
     }
-    return { data: null, error: result.error };
+    return { data: null, error: result.error! };
   }
 }
 

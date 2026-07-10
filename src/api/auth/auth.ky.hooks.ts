@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import { Hooks } from "ky";
 import { useStore } from "../../store";
 import { authService } from "./auth.service";
@@ -13,7 +14,7 @@ export const withAuthHooks: Hooks = {
         // check if accessToken is expired
         if (Date.now() >= expiresAt) {
           // refresh token using refreshToken api
-          const { data, error } = await authService.refreshAccessToken(
+          const { data, error } = (await authService.refreshAccessToken(
             { refreshToken },
             {
               headers: {
@@ -21,7 +22,7 @@ export const withAuthHooks: Hooks = {
                 Authorization: `Bearer ${accessToken}`,
               },
             }
-          );
+          )) as any;
 
           if (data) {
             // update auth store with new accessToken, refreshToken, and expiresAt

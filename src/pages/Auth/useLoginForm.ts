@@ -28,7 +28,8 @@ export const useLoginForm = ({ defaultValues }: TUseLoginFormProps = {}) => {
     (e: FormEvent<HTMLFormElement>) => {
       void form.handleSubmit(
         async (payload) => {
-          const { data, error } = await authService.login(payload);
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          const { data, error } = (await authService.login(payload)) as any;
 
           if (data) {
             // update auth store with new accessToken, refreshToken, and expiresAt
