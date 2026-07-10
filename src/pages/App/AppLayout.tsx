@@ -19,10 +19,12 @@ import { Input } from "../../components/forms";
 import { PanelLeft, Search, LayoutDashboard, Users, Clock, CalendarRange, Settings as SettingsIcon } from "lucide-react";
 import { useAppLayout } from "./useAppLayout";
 import { useStore } from "../../store/store";
+import { useUIStore } from "../../store/uiStore";
 
 export const AppLayout = () => {
   const { handleLogout } = useAppLayout();
   const user = useStore((state) => state.user);
+  const { isSidebarCollapsed } = useUIStore();
 
   const mobileMenuItems = [
     { to: "/app" as any, label: "Dashboard", icon: LayoutDashboard },
@@ -37,7 +39,9 @@ export const AppLayout = () => {
       <div className="h-[calc(100dvh-var(--footer-height))] bg-zinc-50 dark:bg-zinc-950/20">
         <Sidebar />
 
-        <div className="flex h-full flex-col sm:gap-4 sm:py-4 sm:pl-64">
+        <div className={`flex h-full flex-col sm:gap-4 sm:py-4 transition-all duration-300 ${
+          isSidebarCollapsed ? "sm:pl-16" : "sm:pl-64"
+        }`}>
           <header className="sticky top-0 z-[--z-navbar] flex h-[--navbar-height] items-center gap-4 border-b bg-background/85 backdrop-blur-md px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <Sheet>
               <SheetTrigger asChild>
