@@ -1,0 +1,758 @@
+import * as React from "react";
+import { 
+  Clock, 
+  MapPin, 
+  Search, 
+  Filter, 
+  Eye, 
+  Check, 
+  X, 
+  Camera, 
+  Calendar, 
+  CheckCircle, 
+  AlertTriangle,
+  FileEdit,
+  Map,
+  ChevronLeft,
+  ChevronRight,
+  Users
+} from "lucide-react";
+import { useToast } from "../../components/ui";
+import workerSelfie from "../../assets/indonesian_worker_selfie.png";
+
+interface AttendanceRecord {
+  id: string;
+  name: string;
+  role: string;
+  avatarInitials: string;
+  shift: string;
+  clockIn: string;
+  clockOut: string;
+  site: string;
+  department: string;
+  latitude: number | null;
+  longitude: number | null;
+  status: "Present" | "Late" | "Absent" | "On Leave";
+  hasOvertime: boolean;
+  correctionReason?: string;
+}
+
+export const Attendance = () => {
+  const { toast } = useToast();
+
+  // Filters State
+  const [selectedPeriod, setSelectedPeriod] = React.useState("Jan 01 - Jan 31, 2026");
+  const [selectedSite, setSelectedSite] = React.useState("All Sites");
+  const [selectedDept, setSelectedDept] = React.useState("All Departments");
+  const [activeTab, setActiveTab] = React.useState<"ALL" | "Late" | "Absent" | "Leaves" | "Overtime">("ALL");
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  // Attendance Records State
+  const [records, setRecords] = React.useState<AttendanceRecord[]>([
+    { 
+      id: "ATT-1992", 
+      name: "Ahmad Rizki", 
+      role: "Heavy Equipment Operator", 
+      avatarInitials: "AR",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "07:45 AM", 
+      clockOut: "18:00 PM", 
+      site: "Site Alpha", 
+      department: "Operations",
+      latitude: -0.502, 
+      longitude: 101.445,
+      status: "Present",
+      hasOvertime: true
+    },
+    { 
+      id: "ATT-1993", 
+      name: "Budi Santoso", 
+      role: "Site Supervisor", 
+      avatarInitials: "BS",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "08:15 AM", 
+      clockOut: "18:00 PM", 
+      site: "Site Alpha", 
+      department: "Operations",
+      latitude: -0.504, 
+      longitude: 101.448,
+      status: "Late",
+      hasOvertime: false
+    },
+    { 
+      id: "ATT-1994", 
+      name: "Citra Dewi", 
+      role: "Logistics Admin", 
+      avatarInitials: "CD",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "07:55 AM", 
+      clockOut: "18:00 PM", 
+      site: "Head Office", 
+      department: "HR",
+      latitude: -6.200, 
+      longitude: 106.816,
+      status: "Present",
+      hasOvertime: false
+    },
+    { 
+      id: "ATT-1995", 
+      name: "Doni Pratama", 
+      role: "Truck Driver", 
+      avatarInitials: "DP",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "08:05 AM", 
+      clockOut: "18:00 PM", 
+      site: "Site Beta", 
+      department: "Logistics",
+      latitude: -1.265, 
+      longitude: 116.890,
+      status: "Late",
+      hasOvertime: false
+    },
+    { 
+      id: "ATT-1996", 
+      name: "Eko Wahyudi", 
+      role: "Mechanic", 
+      avatarInitials: "EW",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "07:55 AM", 
+      clockOut: "18:00 PM", 
+      site: "Site Beta", 
+      department: "Engineering",
+      latitude: -0.510, 
+      longitude: 101.440,
+      status: "Present",
+      hasOvertime: true
+    },
+    { 
+      id: "ATT-1997", 
+      name: "Fitriani", 
+      role: "Warehouse Operator", 
+      avatarInitials: "FT",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "-", 
+      clockOut: "-", 
+      site: "Site Alpha", 
+      department: "Operations",
+      latitude: null, 
+      longitude: null,
+      status: "Absent",
+      hasOvertime: false
+    },
+    { 
+      id: "ATT-1998", 
+      name: "Hendra Wijaya", 
+      role: "Welder", 
+      avatarInitials: "HW",
+      shift: "Morning (08:00 - 17:00)", 
+      clockIn: "-", 
+      clockOut: "-", 
+      site: "Site Beta", 
+      department: "Operations",
+      latitude: null, 
+      longitude: null,
+      status: "On Leave",
+      hasOvertime: false
+    }
+  ]);
+
+  // Modal State
+  const [selectedRecord, setSelectedRecord] = React.useState<AttendanceRecord | null>(null);
+  const [isEditing, setIsEditing] = React.useState(false);
+
+  // Edit Form Fields State
+  const [editStatus, setEditStatus] = React.useState<"Present" | "Late" | "Absent" | "On Leave">("Present");
+  const [editClockIn, setEditClockIn] = React.useState("");
+  const [editClockOut, setEditClockOut] = React.useState("");
+  const [editReason, setEditReason] = React.useState("");
+
+  // Open Verification Modal
+  const handleOpenVerification = (record: AttendanceRecord) => {
+    setSelectedRecord(record);
+    setIsEditing(false);
+    
+    // Set edit defaults matching the record
+    setEditStatus(record.status);
+    setEditClockIn(record.clockIn !== "-" ? record.clockIn : "08:00 AM");
+    setEditClockOut(record.clockOut !== "-" ? record.clockOut : "17:00 PM");
+    setEditReason(record.correctionReason ?? "");
+  };
+
+  // Close Modal
+  const handleCloseModal = () => {
+    setSelectedRecord(null);
+    setIsEditing(false);
+  };
+
+  // Submit Correction Form (Indonesian Flow standard: Koreksi Absensi)
+  const handleSaveCorrection = () => {
+    if (!selectedRecord) return;
+
+    if (isEditing && !editReason.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Koreksi Absensi Gagal",
+        description: "Alasan koreksi harus diisi.",
+      } as any);
+      return;
+    }
+
+    // Update records list
+    setRecords(prev => prev.map(rec => {
+      if (rec.id === selectedRecord.id) {
+        return {
+          ...rec,
+          status: editStatus,
+          clockIn: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockIn,
+          clockOut: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockOut,
+          correctionReason: editReason
+        };
+      }
+      return rec;
+    }));
+
+    toast({
+      title: "Koreksi Absensi Disimpan",
+      description: `Data kehadiran ${selectedRecord.name} berhasil diperbarui.`,
+    } as any);
+
+    handleCloseModal();
+  };
+
+  // Filter Logic
+  const filteredRecords = records.filter(rec => {
+    // 1. Tab filtering
+    if (activeTab === "Late" && rec.status !== "Late") return false;
+    if (activeTab === "Absent" && rec.status !== "Absent") return false;
+    if (activeTab === "Leaves" && rec.status !== "On Leave") return false;
+    if (activeTab === "Overtime" && !rec.hasOvertime) return false;
+
+    // 2. Search query filtering
+    if (searchQuery && !rec.name.toLowerCase().includes(searchQuery.toLowerCase()) && !rec.role.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+    // 3. Dropdowns filtering
+    if (selectedSite !== "All Sites" && rec.site !== selectedSite) return false;
+    if (selectedDept !== "All Departments" && rec.department !== selectedDept) return false;
+
+    return true;
+  });
+
+  return (
+    <div className="space-y-6 text-zinc-700 dark:text-zinc-300">
+      
+      {/* Title */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+          Site Alpha (Attendance & Tracking)
+        </h1>
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+          Monitor and manage daily attendance across all sites.
+        </p>
+      </div>
+
+      {/* Filter Dropdowns */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-4 rounded-2xl shadow-sm grid gap-4 sm:grid-cols-3">
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Period</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+            <select 
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 pl-9 pr-3 py-2 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option>Jan 01 - Jan 31, 2026</option>
+              <option>Feb 01 - Feb 28, 2026</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Site Location</label>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+            <select 
+              value={selectedSite}
+              onChange={(e) => setSelectedSite(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 pl-9 pr-3 py-2 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option>All Sites</option>
+              <option>Site Alpha</option>
+              <option>Site Beta</option>
+              <option>Head Office</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Department</label>
+          <div className="relative">
+            <Users className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+            <select 
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 pl-9 pr-3 py-2 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option>All Departments</option>
+              <option>Operations</option>
+              <option>Logistics</option>
+              <option>Engineering</option>
+              <option>HR</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Metrics Row */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 flex items-center justify-center">
+            <CheckCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. On-Time</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">862 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 flex items-center justify-center">
+            <Clock className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. Late</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">30 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 p-5 rounded-2xl shadow-sm flex items-center gap-4">
+          <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 flex items-center justify-center">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-[10px] font-bold text-zinc-400 uppercase">Avg. Absent</h3>
+            <p className="text-xl font-extrabold text-zinc-900 dark:text-white mt-0.5">8 <span className="text-xs font-semibold text-zinc-400">Users</span></p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Table Panel */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/60 rounded-2xl shadow-sm overflow-hidden">
+        
+        {/* Table Header Bar */}
+        <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Tab Selection */}
+          <div className="flex flex-wrap gap-1">
+            {(["ALL", "Late", "Absent", "Leaves", "Overtime"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all duration-150 ${
+                  activeTab === tab 
+                    ? "bg-[#282d8d] text-white shadow-md shadow-indigo-900/10" 
+                    : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-850"
+                }`}
+              >
+                {tab === "ALL" ? "ALL" : tab === "Leaves" ? "Leaves/Cuti" : tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Search & Custom Actions */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search Employee..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-3 py-2 text-xs border border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-850 w-full sm:w-[220px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
+            <button className="p-2 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+              <Filter className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Table Body */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="bg-zinc-50/50 dark:bg-zinc-800/20 text-zinc-400 text-[10px] font-semibold uppercase tracking-wider border-b border-zinc-100 dark:border-zinc-800">
+                <th className="px-6 py-3.5">Employee</th>
+                <th className="px-6 py-3.5">Shift Info</th>
+                <th className="px-6 py-3.5">Clock In</th>
+                <th className="px-6 py-3.5">Clock Out</th>
+                <th className="px-6 py-3.5">Site Location</th>
+                <th className="px-6 py-3.5">Evidence</th>
+                <th className="px-6 py-3.5 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
+              {filteredRecords.length > 0 ? (
+                filteredRecords.map((row) => (
+                  <tr key={row.id} className="hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 transition-colors">
+                    
+                    {/* Employee Profile */}
+                    <td className="px-6 py-3.5 flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-indigo-50 dark:bg-zinc-800 flex items-center justify-center font-extrabold text-[#282d8d] dark:text-indigo-400 text-xs shadow-inner">
+                        {row.avatarInitials}
+                      </div>
+                      <div>
+                        <p className="font-bold text-zinc-850 dark:text-zinc-200">{row.name}</p>
+                        <p className="text-[10px] text-zinc-400">{row.role}</p>
+                      </div>
+                    </td>
+
+                    {/* Shift */}
+                    <td className="px-6 py-3.5 text-zinc-500 dark:text-zinc-400 font-medium">
+                      {row.shift}
+                    </td>
+
+                    {/* Clock In */}
+                    <td className="px-6 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${row.status === "Late" ? "text-red-500" : "text-zinc-850 dark:text-zinc-200"}`}>
+                          {row.clockIn}
+                        </span>
+                        {row.status === "Late" && (
+                          <span className="text-[9px] font-extrabold uppercase bg-red-50 dark:bg-red-950/20 text-red-600 px-2 py-0.5 rounded-full">
+                            Late
+                          </span>
+                        )}
+                        {row.status === "Absent" && (
+                          <span className="text-[9px] font-extrabold uppercase bg-red-100 dark:bg-red-950/40 text-red-700 px-2 py-0.5 rounded-full">
+                            Absent
+                          </span>
+                        )}
+                        {row.status === "On Leave" && (
+                          <span className="text-[9px] font-extrabold uppercase bg-blue-50 dark:bg-blue-950/20 text-blue-600 px-2 py-0.5 rounded-full">
+                            On Leave
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Clock Out */}
+                    <td className="px-6 py-3.5 font-bold text-zinc-850 dark:text-zinc-200">
+                      {row.clockOut}
+                    </td>
+
+                    {/* Site */}
+                    <td className="px-6 py-3.5">
+                      <span className="font-bold text-zinc-700 dark:text-zinc-300">{row.site}</span>
+                      <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">{row.department}</p>
+                    </td>
+
+                    {/* Evidence Photo */}
+                    <td className="px-6 py-3.5">
+                      {row.latitude ? (
+                        <button 
+                          onClick={() => handleOpenVerification(row)}
+                          className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 hover:text-[#282d8d] dark:text-zinc-400 dark:hover:text-white transition-colors"
+                        >
+                          <Camera className="h-3.5 w-3.5" />
+                          <span className="underline">View Photo</span>
+                        </button>
+                      ) : (
+                        <span className="text-zinc-400 font-medium">-</span>
+                      )}
+                    </td>
+
+                    {/* Eye Action */}
+                    <td className="px-6 py-3.5 text-center">
+                      <button 
+                        onClick={() => handleOpenVerification(row)}
+                        className="p-1.5 border border-zinc-100 hover:border-zinc-250 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-all duration-150"
+                        title="Verify Attendance"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
+
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-10 text-center text-zinc-400 font-medium">
+                    No attendance records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] font-bold text-zinc-400">
+          <span>Page 1 of 10</span>
+          <div className="flex items-center gap-1">
+            <button className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
+              <ChevronLeft className="h-3.5 w-3.5" />
+              <span>Back</span>
+            </button>
+            <button className="h-7 w-7 flex items-center justify-center bg-[#282d8d] text-white rounded-xl">1</button>
+            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">2</button>
+            <span className="px-1">...</span>
+            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">8</button>
+            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">9</button>
+            <button className="h-7 w-7 flex items-center justify-center hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl">10</button>
+            <button className="p-1 px-3 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 text-zinc-500">
+              <span>Next</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Dynamic Centered Modal Backdrop */}
+      {selectedRecord && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          
+          {/* Modal Container */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-200 scale-100">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-5">
+              <div>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                  {isEditing ? "Koreksi Kehadiran (Correction Form)" : "Attendance Verification"}
+                </h2>
+                <p className="text-[10px] text-zinc-400">
+                  ID: {selectedRecord.id} &bull; {selectedRecord.clockIn}
+                </p>
+              </div>
+              <button 
+                onClick={handleCloseModal}
+                className="p-1.5 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Profile Overview */}
+            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-zinc-50/50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-850 mb-5">
+              <div className="h-11 w-11 rounded-full bg-indigo-100 dark:bg-zinc-800 text-[#282d8d] dark:text-indigo-400 font-extrabold flex items-center justify-center shadow-inner text-sm shrink-0">
+                {selectedRecord.avatarInitials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-extrabold text-zinc-900 dark:text-white truncate">
+                  {selectedRecord.name}
+                </h4>
+                <p className="text-[10px] text-zinc-400 truncate">{selectedRecord.role}</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={`text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                  selectedRecord.status === "Present" ? "bg-emerald-50 text-emerald-600" :
+                  selectedRecord.status === "Late" ? "bg-amber-50 text-amber-600" :
+                  selectedRecord.status === "Absent" ? "bg-red-50 text-red-600" :
+                  "bg-blue-50 text-blue-600"
+                }`}>
+                  {selectedRecord.status}
+                </span>
+                <span className="text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full truncate max-w-[130px]">
+                  {selectedRecord.shift}
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Body / Multi-State view */}
+            <div className="flex-1 overflow-y-auto pr-1">
+              {!isEditing ? (
+                /* Verification Details (Screenshot 2 view) */
+                <div className="grid gap-6 md:grid-cols-2">
+                  
+                  {/* Live Capture (Portraits) */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Capture</span>
+                      <span className="text-[9px] font-semibold text-emerald-500">Selfie Verified</span>
+                    </div>
+                    <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-zinc-100 dark:bg-zinc-800">
+                      {selectedRecord.latitude ? (
+                        <img 
+                          src={workerSelfie} 
+                          alt="Employee Check-in Selfie" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
+                          <Camera className="h-8 w-8 text-zinc-350" />
+                          <span className="text-xs font-semibold">No Selfie Captured</span>
+                        </div>
+                      )}
+                      
+                      {selectedRecord.latitude && (
+                        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] font-bold text-white border border-white/10">
+                          Captured at {selectedRecord.clockIn}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Geotagging Map View */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Geotag</span>
+                      {selectedRecord.latitude ? (
+                        <span className="text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">
+                          Inside Radius
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {/* Styled Mock Map */}
+                    <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-indigo-50/20 dark:bg-zinc-850/50 flex flex-col justify-between p-4">
+                      {/* Grid background lines to mimic map grid */}
+                      <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-[0.06] dark:opacity-[0.02] pointer-events-none">
+                        {Array.from({ length: 36 }).map((_, i) => (
+                          <div key={i} className="border border-zinc-900" />
+                        ))}
+                      </div>
+
+                      {selectedRecord.latitude ? (
+                        <>
+                          {/* Radius circle and pin marker */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-400 bg-indigo-400/5 animate-pulse flex items-center justify-center">
+                              <div className="h-16 w-16 rounded-full border border-indigo-400 bg-indigo-400/10 flex items-center justify-center">
+                                <MapPin className="h-6 w-6 text-[#282d8d] dark:text-indigo-400 animate-bounce" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Coordinates Box */}
+                          <div className="mt-auto z-10 mx-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-xl shadow-sm text-[9px] font-bold text-zinc-500">
+                            Lat: {selectedRecord.latitude}, Long: {selectedRecord.longitude}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
+                          <Map className="h-8 w-8 text-zinc-350" />
+                          <span className="text-xs font-semibold">No GPS Data</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                /* Edit Correction Form (Standard Indonesian Koreksi Kehadiran flow) */
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    
+                    {/* Status Select */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Ubah Status</label>
+                      <select 
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value as any)}
+                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="Present">Present (Hadir)</option>
+                        <option value="Late">Late (Terlambat)</option>
+                        <option value="Absent">Absent (Mangkir)</option>
+                        <option value="On Leave">On Leave (Cuti / Izin)</option>
+                      </select>
+                    </div>
+
+                    {/* Clock In */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Masuk (Clock In)</label>
+                      <input 
+                        type="text" 
+                        value={editClockIn}
+                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
+                        onChange={(e) => setEditClockIn(e.target.value)}
+                        placeholder="e.g. 08:00 AM"
+                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                      />
+                    </div>
+
+                    {/* Clock Out */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Pulang (Clock Out)</label>
+                      <input 
+                        type="text" 
+                        value={editClockOut}
+                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
+                        onChange={(e) => setEditClockOut(e.target.value)}
+                        placeholder="e.g. 17:00 PM"
+                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* Correction Reason */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Alasan Koreksi (Reason for Correction)</label>
+                    <textarea 
+                      value={editReason}
+                      onChange={(e) => setEditReason(e.target.value)}
+                      placeholder="Tulis alasan koreksi absen disini... (wajib diisi)"
+                      rows={4}
+                      className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  {selectedRecord.correctionReason && (
+                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase">Riwayat Alasan Koreksi Sebelumnya:</span>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 italic">
+                        "{selectedRecord.correctionReason}"
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end gap-2.5">
+              {!isEditing ? (
+                <>
+                  <button 
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 rounded-xl transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                  >
+                    <FileEdit className="h-4 w-4" />
+                    <span>Edit Attendance</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => setIsEditing(false)}
+                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 rounded-xl transition-colors"
+                  >
+                    Kembali (Back)
+                  </button>
+                  <button 
+                    onClick={handleSaveCorrection}
+                    className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-green-900/10"
+                  >
+                    <Check className="h-4 w-4" />
+                    <span>Simpan Koreksi (Save Correction)</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
