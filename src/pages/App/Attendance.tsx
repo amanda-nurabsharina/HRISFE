@@ -5,13 +5,11 @@ import {
   Search, 
   Filter, 
   Eye, 
-  Check, 
   X, 
   Camera, 
   Calendar, 
   CheckCircle, 
   AlertTriangle,
-  FileEdit,
   Map,
   ChevronLeft,
   ChevronRight,
@@ -19,14 +17,11 @@ import {
   Loader2,
   RefreshCw
 } from "lucide-react";
-import { useToast } from "../../components/ui";
-import { useAttendanceQuery, useAttendanceCorrectionMutation } from "../../api/attendance";
+import { useAttendanceQuery } from "../../api/attendance";
 import type { TAttendanceRecord } from "../../api/attendance";
 import workerSelfie from "../../assets/indonesian_worker_selfie.png";
 
 export const Attendance = () => {
-  const { toast } = useToast();
-
   // Filters State
   const [selectedPeriod, setSelectedPeriod] = React.useState("Jan 01 - Jan 31, 2026");
   const [selectedSite, setSelectedSite] = React.useState("All Sites");
@@ -47,7 +42,7 @@ export const Attendance = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const recordsPerPage = 10;
 
-  // Fetch attendance data from real backend API
+  // Fetch attendance data from real backend API (READ-ONLY)
   const { 
     data: attendanceData, 
     isLoading, 
@@ -60,78 +55,20 @@ export const Attendance = () => {
     search: debouncedSearch,
   });
 
-  // Correction mutation
-  const correctionMutation = useAttendanceCorrectionMutation({
-    onSuccess: (response) => {
-      toast({
-        title: "Koreksi Absensi Disimpan",
-        description: response.message || `Data kehadiran berhasil diperbarui.`,
-      } as any);
-      handleCloseModal();
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "Koreksi Absensi Gagal",
-        description: "Gagal menyimpan koreksi. Silakan coba lagi.",
-      } as any);
-    }
-  });
-
   // Records from API
   const records: TAttendanceRecord[] = attendanceData?.results ?? [];
 
-  // Modal State
+  // Modal State (view-only)
   const [selectedRecord, setSelectedRecord] = React.useState<TAttendanceRecord | null>(null);
-  const [isEditing, setIsEditing] = React.useState(false);
 
-  // Edit Form Fields State
-  const [editStatus, setEditStatus] = React.useState<"Present" | "Late" | "Absent" | "On Leave">("Present");
-  const [editClockIn, setEditClockIn] = React.useState("");
-  const [editClockOut, setEditClockOut] = React.useState("");
-  const [editReason, setEditReason] = React.useState("");
-
-  // Open Verification Modal
+  // Open Verification Modal (read-only view)
   const handleOpenVerification = (record: TAttendanceRecord) => {
     setSelectedRecord(record);
-    setIsEditing(false);
-    
-    // Set edit defaults matching the record
-    setEditStatus(record.status);
-    setEditClockIn(record.clockIn !== "-" ? record.clockIn : "08:00 AM");
-    setEditClockOut(record.clockOut !== "-" ? record.clockOut : "17:00 PM");
-    setEditReason(record.correctionReason ?? "");
   };
 
   // Close Modal
   const handleCloseModal = () => {
     setSelectedRecord(null);
-    setIsEditing(false);
-  };
-
-  // Submit Correction Form (Indonesian Flow standard: Koreksi Absensi)
-  const handleSaveCorrection = () => {
-    if (!selectedRecord) return;
-
-    if (isEditing && !editReason.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Koreksi Absensi Gagal",
-        description: "Alasan koreksi harus diisi.",
-      } as any);
-      return;
-    }
-
-    // Submit correction via API
-    correctionMutation.mutate({
-      id: selectedRecord.id,
-      payload: {
-        status: editStatus,
-        clockIn: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockIn,
-        clockOut: editStatus === "Absent" || editStatus === "On Leave" ? "-" : editClockOut,
-        reason: editReason,
-      },
-    });
   };
 
   // Client-side tab filtering (API already handles site/dept/search)
@@ -170,7 +107,7 @@ export const Attendance = () => {
             Attendance & Tracking
           </h1>
           <p className="text-xs text-zinc-400 dark:text-zinc-500">
-            Monitor and manage daily attendance across all sites.
+            Monitor daily attendance across all sites. Data is synced from mobile check-ins.
           </p>
         </div>
         <button 
@@ -427,7 +364,7 @@ export const Attendance = () => {
                         <button 
                           onClick={() => handleOpenVerification(row)}
                           className="p-1.5 border border-zinc-100 hover:border-zinc-250 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-white transition-all duration-150"
-                          title="Verify Attendance"
+                          title="View Details"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -437,8 +374,18 @@ export const Attendance = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-zinc-400 font-medium">
-                      No attendance records found.
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="h-14 w-14 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center">
+                          <Clock className="h-7 w-7 text-zinc-300 dark:text-zinc-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">No Records Found</p>
+                          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                            Attendance data will appear here when employees check in via the mobile app.
+                          </p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -448,7 +395,7 @@ export const Attendance = () => {
         </div>
 
         {/* Pagination Footer */}
-        {!isLoading && !isError && (
+        {!isLoading && !isError && filteredRecords.length > 0 && (
           <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] font-bold text-zinc-400">
             <span>
               Page {currentPage} of {totalPages} 
@@ -506,7 +453,7 @@ export const Attendance = () => {
 
       </div>
 
-      {/* Dynamic Centered Modal Backdrop */}
+      {/* View Detail Modal (Read-Only) */}
       {selectedRecord && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           
@@ -517,7 +464,7 @@ export const Attendance = () => {
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-5">
               <div>
                 <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                  {isEditing ? "Koreksi Kehadiran (Correction Form)" : "Attendance Verification"}
+                  Attendance Verification
                 </h2>
                 <p className="text-[10px] text-zinc-400">
                   ID: {selectedRecord.id} &bull; {selectedRecord.clockIn}
@@ -557,199 +504,116 @@ export const Attendance = () => {
               </div>
             </div>
 
-            {/* Modal Body / Multi-State view */}
+            {/* Modal Body — Verification Details (Read-Only) */}
             <div className="flex-1 overflow-y-auto pr-1">
-              {!isEditing ? (
-                /* Verification Details */
-                <div className="grid gap-6 md:grid-cols-2">
-                  
-                  {/* Live Capture (Portraits) */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Capture</span>
+              <div className="grid gap-6 md:grid-cols-2">
+                
+                {/* Live Capture (Selfie) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Capture</span>
+                    {selectedRecord.latitude && (
                       <span className="text-[9px] font-semibold text-emerald-500">Selfie Verified</span>
-                    </div>
-                    <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-zinc-100 dark:bg-zinc-800">
-                      {selectedRecord.latitude ? (
-                        <img 
-                          src={workerSelfie} 
-                          alt="Employee Check-in Selfie" 
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
-                          <Camera className="h-8 w-8 text-zinc-350" />
-                          <span className="text-xs font-semibold">No Selfie Captured</span>
-                        </div>
-                      )}
-                      
-                      {selectedRecord.latitude && (
-                        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] font-bold text-white border border-white/10">
-                          Captured at {selectedRecord.clockIn}
-                        </div>
-                      )}
-                    </div>
+                    )}
+                  </div>
+                  <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-zinc-100 dark:bg-zinc-800">
+                    {selectedRecord.latitude ? (
+                      <img 
+                        src={workerSelfie} 
+                        alt="Employee Check-in Selfie" 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
+                        <Camera className="h-8 w-8 text-zinc-350" />
+                        <span className="text-xs font-semibold">No Selfie Captured</span>
+                      </div>
+                    )}
+                    
+                    {selectedRecord.latitude && (
+                      <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] font-bold text-white border border-white/10">
+                        Captured at {selectedRecord.clockIn}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Geotagging Map View */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Geotag</span>
+                    {selectedRecord.latitude ? (
+                      <span className="text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">
+                        Inside Radius
+                      </span>
+                    ) : null}
                   </div>
 
-                  {/* Geotagging Map View */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Geotag</span>
-                      {selectedRecord.latitude ? (
-                        <span className="text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full">
-                          Inside Radius
-                        </span>
-                      ) : null}
+                  {/* Styled Mock Map */}
+                  <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-indigo-50/20 dark:bg-zinc-850/50 flex flex-col justify-between p-4">
+                    {/* Grid background lines to mimic map grid */}
+                    <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-[0.06] dark:opacity-[0.02] pointer-events-none">
+                      {Array.from({ length: 36 }).map((_, i) => (
+                        <div key={i} className="border border-zinc-900" />
+                      ))}
                     </div>
 
-                    {/* Styled Mock Map */}
-                    <div className="relative rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 h-56 bg-indigo-50/20 dark:bg-zinc-850/50 flex flex-col justify-between p-4">
-                      {/* Grid background lines to mimic map grid */}
-                      <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-[0.06] dark:opacity-[0.02] pointer-events-none">
-                        {Array.from({ length: 36 }).map((_, i) => (
-                          <div key={i} className="border border-zinc-900" />
-                        ))}
-                      </div>
-
-                      {selectedRecord.latitude ? (
-                        <>
-                          {/* Radius circle and pin marker */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-400 bg-indigo-400/5 animate-pulse flex items-center justify-center">
-                              <div className="h-16 w-16 rounded-full border border-indigo-400 bg-indigo-400/10 flex items-center justify-center">
-                                <MapPin className="h-6 w-6 text-[#282d8d] dark:text-indigo-400 animate-bounce" />
-                              </div>
+                    {selectedRecord.latitude ? (
+                      <>
+                        {/* Radius circle and pin marker */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="h-28 w-28 rounded-full border-2 border-dashed border-indigo-400 bg-indigo-400/5 animate-pulse flex items-center justify-center">
+                            <div className="h-16 w-16 rounded-full border border-indigo-400 bg-indigo-400/10 flex items-center justify-center">
+                              <MapPin className="h-6 w-6 text-[#282d8d] dark:text-indigo-400 animate-bounce" />
                             </div>
                           </div>
-
-                          {/* Coordinates Box */}
-                          <div className="mt-auto z-10 mx-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-xl shadow-sm text-[9px] font-bold text-zinc-500">
-                            Lat: {selectedRecord.latitude}, Long: {selectedRecord.longitude}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
-                          <Map className="h-8 w-8 text-zinc-350" />
-                          <span className="text-xs font-semibold">No GPS Data</span>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
+                        {/* Coordinates Box */}
+                        <div className="mt-auto z-10 mx-auto bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-xl shadow-sm text-[9px] font-bold text-zinc-500">
+                          Lat: {selectedRecord.latitude}, Long: {selectedRecord.longitude}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400">
+                        <Map className="h-8 w-8 text-zinc-350" />
+                        <span className="text-xs font-semibold">No GPS Data</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                /* Edit Correction Form (Standard Indonesian Koreksi Kehadiran flow) */
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    
-                    {/* Status Select */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Ubah Status</label>
-                      <select 
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value as any)}
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="Present">Present (Hadir)</option>
-                        <option value="Late">Late (Terlambat)</option>
-                        <option value="Absent">Absent (Mangkir)</option>
-                        <option value="On Leave">On Leave (Cuti / Izin)</option>
-                      </select>
-                    </div>
 
-                    {/* Clock In */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Masuk (Clock In)</label>
-                      <input 
-                        type="text" 
-                        value={editClockIn}
-                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
-                        onChange={(e) => setEditClockIn(e.target.value)}
-                        placeholder="e.g. 08:00 AM"
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
-                      />
-                    </div>
-
-                    {/* Clock Out */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Pulang (Clock Out)</label>
-                      <input 
-                        type="text" 
-                        value={editClockOut}
-                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
-                        onChange={(e) => setEditClockOut(e.target.value)}
-                        placeholder="e.g. 17:00 PM"
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
-                      />
-                    </div>
-
+                {/* Attendance Details Summary */}
+                <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase">Clock In</span>
+                    <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.clockIn}</p>
                   </div>
-
-                  {/* Correction Reason */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Alasan Koreksi (Reason for Correction)</label>
-                    <textarea 
-                      value={editReason}
-                      onChange={(e) => setEditReason(e.target.value)}
-                      placeholder="Tulis alasan koreksi absen disini... (wajib diisi)"
-                      rows={4}
-                      className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                  <div className="p-3 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase">Clock Out</span>
+                    <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.clockOut}</p>
                   </div>
-
-                  {selectedRecord.correctionReason && (
-                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-150 dark:border-zinc-800">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase">Riwayat Alasan Koreksi Sebelumnya:</span>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 italic">
-                        "{selectedRecord.correctionReason}"
-                      </p>
-                    </div>
-                  )}
-
+                  <div className="p-3 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase">Site</span>
+                    <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.site}</p>
+                  </div>
+                  <div className="p-3 bg-zinc-50/50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase">Department</span>
+                    <p className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.department}</p>
+                  </div>
                 </div>
-              )}
+
+              </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end gap-2.5">
-              {!isEditing ? (
-                <>
-                  <button 
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 rounded-xl transition-colors"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
-                  >
-                    <FileEdit className="h-4 w-4" />
-                    <span>Edit Attendance</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 rounded-xl transition-colors"
-                  >
-                    Kembali (Back)
-                  </button>
-                  <button 
-                    onClick={handleSaveCorrection}
-                    disabled={correctionMutation.isPending}
-                    className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-green-900/10 disabled:opacity-60"
-                  >
-                    {correctionMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4" />
-                    )}
-                    <span>Simpan Koreksi (Save Correction)</span>
-                  </button>
-                </>
-              )}
+            {/* Modal Actions (Read-Only) */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end">
+              <button 
+                onClick={handleCloseModal}
+                className="px-5 py-2.5 text-xs font-bold text-zinc-600 hover:text-zinc-800 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-xl transition-colors"
+              >
+                Close
+              </button>
             </div>
 
           </div>
