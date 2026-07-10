@@ -46,7 +46,7 @@ class AuthService {
   refreshAccessTokenEndpoint = `${this.rootEndpoint}/refresh-tokens` as const;
 
   // methods
-  async login(payload: TAuthLoginRequestPayload, options?: TApiServiceOptions) {
+  async login(payload: TAuthLoginRequestPayload, options?: TApiServiceOptions): Promise<{ data: TAuthLoginResponsePayload; error: null } | { data: null; error: TApiServiceError }> {
     const result = await handleAsync<TApiServiceError, any>(() =>
       apiService.post(this.loginEndpoint, payload, options)
     );
@@ -72,9 +72,9 @@ class AuthService {
         refreshToken: backendData.tokens.refresh.token,
         expiresAt: new Date(backendData.tokens.access.expires).getTime(),
       };
-      return { data: formattedData };
+      return { data: formattedData, error: null };
     }
-    return result;
+    return { data: null, error: result.error };
   }
 
   logout(options?: TApiServiceOptions) {
@@ -82,7 +82,7 @@ class AuthService {
     return apiService.post<void>(this.logoutEndpoint, { refresh_token: refreshToken }, options);
   }
 
-  async refreshAccessToken(payload: TAuthRefreshAccessTokenRequestPayload, options?: TApiServiceOptions) {
+  async refreshAccessToken(payload: TAuthRefreshAccessTokenRequestPayload, options?: TApiServiceOptions): Promise<{ data: TAuthRefreshAccessTokenResponsePayload; error: null } | { data: null; error: TApiServiceError }> {
     const result = await handleAsync<TApiServiceError, any>(() =>
       apiService.post(this.refreshAccessTokenEndpoint, { refresh_token: payload.refreshToken }, options)
     );
@@ -94,9 +94,9 @@ class AuthService {
         refreshToken: backendData.tokens.refresh.token,
         expiresAt: new Date(backendData.tokens.access.expires).getTime(),
       };
-      return { data: formattedData };
+      return { data: formattedData, error: null };
     }
-    return result;
+    return { data: null, error: result.error };
   }
 }
 
