@@ -43,7 +43,7 @@ export const Posts = () => {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-6 rounded-2xl border border-emerald-500/10">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-800 dark:text-zinc-100">
-            Welcome back, {user?.name || "Administrator"}!
+            Welcome back, {user?.name ?? "Administrator"}!
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Here's what is happening with your organization today.

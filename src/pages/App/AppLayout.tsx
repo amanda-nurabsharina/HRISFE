@@ -124,7 +124,7 @@ export const AppLayout = () => {
               <div className="hidden md:flex flex-col text-right ml-2">
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{user.name}</span>
                 <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">
-                  {user.role} &bull; {(user as any).department || "Staff"}
+                  {user.role} &bull; {(user as { department?: string }).department ?? "Staff"}
                 </span>
               </div>
             )}

@@ -18,7 +18,8 @@ declare global {
 async function setupApp() {
   await i18n.configure();
 
-  if (isDevelopment || isProduction) {
+  const enableMocker = import.meta.env.VITE_ENABLE_MOCK === "true";
+  if (enableMocker && (isDevelopment || isProduction)) {
     const mocker = await import("./mocker/index.ts");
 
     await mocker.runServer();
