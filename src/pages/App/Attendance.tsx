@@ -10,6 +10,7 @@ import {
   Calendar, 
   CheckCircle, 
   AlertTriangle,
+  FileEdit,
   Map,
   ChevronLeft,
   ChevronRight,
@@ -58,17 +59,29 @@ export const Attendance = () => {
   // Records from API
   const records: TAttendanceRecord[] = attendanceData?.results ?? [];
 
-  // Modal State (view-only)
+  // Detail Modal State (Eye icon → full detail + edit)
   const [selectedRecord, setSelectedRecord] = React.useState<TAttendanceRecord | null>(null);
 
-  // Open Verification Modal (read-only view)
+  // Photo Lightbox State (View Photo → image only)
+  const [photoRecord, setPhotoRecord] = React.useState<TAttendanceRecord | null>(null);
+
+  // Open full detail modal (Eye icon action)
   const handleOpenVerification = (record: TAttendanceRecord) => {
     setSelectedRecord(record);
   };
 
-  // Close Modal
+  // Open image-only lightbox (View Photo)
+  const handleOpenPhoto = (record: TAttendanceRecord) => {
+    setPhotoRecord(record);
+  };
+
+  // Close modals
   const handleCloseModal = () => {
     setSelectedRecord(null);
+  };
+
+  const handleClosePhoto = () => {
+    setPhotoRecord(null);
   };
 
   // Client-side tab filtering (API already handles site/dept/search)
@@ -344,11 +357,11 @@ export const Attendance = () => {
                         <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-semibold">{row.department}</p>
                       </td>
 
-                      {/* Evidence Photo */}
+                      {/* Evidence Photo — opens image-only lightbox */}
                       <td className="px-6 py-3.5">
                         {row.latitude ? (
                           <button 
-                            onClick={() => handleOpenVerification(row)}
+                            onClick={() => handleOpenPhoto(row)}
                             className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-600 hover:text-[#282d8d] dark:text-zinc-400 dark:hover:text-white transition-colors"
                           >
                             <Camera className="h-3.5 w-3.5" />
@@ -606,16 +619,62 @@ export const Attendance = () => {
               </div>
             </div>
 
-            {/* Modal Actions (Read-Only) */}
-            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end">
+            {/* Modal Actions — with Edit Attendance */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end gap-2.5">
               <button 
                 onClick={handleCloseModal}
-                className="px-5 py-2.5 text-xs font-bold text-zinc-600 hover:text-zinc-800 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
               >
                 Close
               </button>
+              <button 
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+              >
+                <FileEdit className="h-4 w-4" />
+                <span>Edit Attendance</span>
+              </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Image-Only Lightbox (View Photo) */}
+      {photoRecord && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[1000] flex items-center justify-center p-6 backdrop-blur-sm cursor-pointer"
+          onClick={handleClosePhoto}
+        >
+          <div 
+            className="relative max-w-lg w-full animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              onClick={handleClosePhoto}
+              className="absolute -top-3 -right-3 z-10 p-1.5 bg-white dark:bg-zinc-800 rounded-full shadow-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors border border-zinc-200 dark:border-zinc-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Image */}
+            <img 
+              src={workerSelfie} 
+              alt={`${photoRecord.name} - Check-in Selfie`}
+              className="w-full rounded-2xl shadow-2xl border border-white/10 object-cover max-h-[75vh]"
+            />
+
+            {/* Caption Bar */}
+            <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-white">{photoRecord.name}</p>
+                <p className="text-[10px] text-white/60">{photoRecord.role}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-white/80">Clock In: {photoRecord.clockIn}</p>
+                <p className="text-[10px] text-white/50">{photoRecord.site}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
