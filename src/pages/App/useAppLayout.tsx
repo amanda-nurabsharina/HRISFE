@@ -23,20 +23,24 @@ export const useAppLayout = () => {
   });
 
   const handleLogout = useCallback(async () => {
-    await mutateAsync();
+    try {
+      await mutateAsync();
+    } catch (err) {
+      console.warn("Backend logout request failed:", err);
+    } finally {
+      // reset auth store
+      resetAuthStore();
 
-    // reset auth store
-    resetAuthStore();
-
-    // invalidate router and finally navigate to home page
-    router
-      .invalidate()
-      .finally(() => {
-        void navigate({ to: "/" });
-      })
-      .catch(() => {
-        console.log("Redirect Error");
-      });
+      // invalidate router and finally navigate to home page
+      router
+        .invalidate()
+        .finally(() => {
+          void navigate({ to: "/" });
+        })
+        .catch(() => {
+          console.log("Redirect Error");
+        });
+    }
   }, [resetAuthStore, router, mutateAsync, navigate]);
 
   return {
