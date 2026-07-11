@@ -9,13 +9,7 @@ export const ReactHookFormDevelopmentTools = !isDevelopment
       }))
     );
 
-export const TanStackRouterDevelopmentTools = !isDevelopment
-  ? (): null => null
-  : React.lazy(() =>
-      import("@tanstack/router-devtools").then((result) => ({
-        default: result.TanStackRouterDevtools,
-      }))
-    );
+export const TanStackRouterDevelopmentTools = (): null => null;
 
 export const TanStackReactQueryDevelopmentTools = !isDevelopment
   ? (): null => null

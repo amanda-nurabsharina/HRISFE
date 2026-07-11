@@ -1,7 +1,6 @@
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { Fragment } from "react";
 
-import { TanStackRouterDevelopmentTools } from "../components/developmentTools";
 import { useDocTitle } from "../components/hooks";
 
 import { QueryClient } from "@tanstack/react-query";
@@ -25,10 +24,6 @@ function RootComponent() {
   return (
     <Fragment>
       <Outlet />
-      <TanStackRouterDevelopmentTools
-        position="bottom-left"
-        initialIsOpen={false}
-      />
     </Fragment>
   );
 }

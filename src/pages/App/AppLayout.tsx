@@ -1,7 +1,7 @@
 import { Outlet } from "@tanstack/react-router";
 import { Sidebar } from "./Sidebar";
 import profileIcon from "../../assets/react.svg";
-import { Footer, Sheet, SheetContent, SheetTrigger } from "../../components/layout";
+import { Sheet, SheetContent, SheetTrigger } from "../../components/layout";
 import {
   Brand,
   Button,
@@ -138,7 +138,6 @@ export const AppLayout = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </main>
   );
 };
