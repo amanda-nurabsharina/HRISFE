@@ -35,7 +35,7 @@ export const useAppLayout = () => {
       router
         .invalidate()
         .finally(() => {
-          void navigate({ to: "/" });
+          void navigate({ to: "/auth/login" });
         })
         .catch(() => {
           console.log("Redirect Error");
