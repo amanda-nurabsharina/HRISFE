@@ -28,8 +28,7 @@ export const useLoginForm = ({ defaultValues }: TUseLoginFormProps = {}) => {
     (e: FormEvent<HTMLFormElement>) => {
       void form.handleSubmit(
         async (payload) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const { data, error } = (await authService.login(payload)) as any;
+          const { data, error } = await authService.login(payload);
 
           if (data) {
             // update auth store with new accessToken, refreshToken, and expiresAt
@@ -45,7 +44,7 @@ export const useLoginForm = ({ defaultValues }: TUseLoginFormProps = {}) => {
           }
 
           if (error) {
-            const errorResponse = error.response ? await error.response.json() : undefined;
+            const errorResponse = error.response ? (await error.response.json()) as Record<string, any> : undefined;
             toast({
               variant: "destructive",
               title: errorResponse?.message ?? error?.message,

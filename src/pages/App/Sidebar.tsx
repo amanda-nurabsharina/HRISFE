@@ -18,6 +18,7 @@ import {
   Settings,
   LogOut,
   ChevronsLeftRight,
+  MapPin,
 } from "lucide-react";
 
 export const Sidebar = () => {
@@ -39,6 +40,7 @@ export const Sidebar = () => {
         { to: "/app/timesheets" as any, label: "Timesheets", icon: Calendar },
         { to: "/app/overtime" as any, label: "Overtime", icon: FileText },
         { to: "/app/roster" as any, label: "Shift Roster", icon: CalendarRange },
+        { to: "/app/locations" as any, label: "Locations", icon: MapPin },
       ],
     },
     {

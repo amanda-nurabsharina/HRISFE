@@ -17,6 +17,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgotPassword'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
+import { Route as AppLocationsRouteImport } from './routes/app/locations'
 import { Route as AppAttendanceRouteImport } from './routes/app/attendance'
 
 const AuthRoute = AuthRouteImport.update({
@@ -59,6 +60,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLocationsRoute = AppLocationsRouteImport.update({
+  id: '/locations',
+  path: '/locations',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/locations': typeof AppLocationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/auth/forgotPassword': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/locations': typeof AppLocationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/auth/forgotPassword': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/locations': typeof AppLocationsRoute
   '/app/settings': typeof AppSettingsRoute
   '/auth/forgotPassword': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/attendance'
+    | '/app/locations'
     | '/app/settings'
     | '/auth/forgotPassword'
     | '/auth/login'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/app/attendance'
+    | '/app/locations'
     | '/app/settings'
     | '/auth/forgotPassword'
     | '/auth/login'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/app/attendance'
+    | '/app/locations'
     | '/app/settings'
     | '/auth/forgotPassword'
     | '/auth/login'
@@ -197,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/locations': {
+      id: '/app/locations'
+      path: '/locations'
+      fullPath: '/app/locations'
+      preLoaderRoute: typeof AppLocationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/attendance': {
       id: '/app/attendance'
       path: '/attendance'
@@ -209,12 +228,14 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppLocationsRoute: typeof AppLocationsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppLocationsRoute: AppLocationsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
