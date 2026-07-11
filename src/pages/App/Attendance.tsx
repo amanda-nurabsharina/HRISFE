@@ -528,61 +528,59 @@ export const Attendance = () => {
 
       </div>
 
-      {/* View Detail Modal (Read-Only) */}
+      {/* Modal Container */}
       {selectedRecord && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           
-          {/* Modal Container */}
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-200 scale-100">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-5">
-              <div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                  {isEditing ? "Koreksi Kehadiran (Correction Form)" : "Attendance Verification"}
-                </h2>
-                <p className="text-[10px] text-zinc-400">
-                  ID: {selectedRecord.id} &bull; {selectedRecord.clockIn}
-                </p>
+          {!isEditing ? (
+            /* View Detail Modal (Read-Only Detail Verification View) */
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-200 scale-100">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4 mb-5">
+                <div>
+                  <h2 className="text-base font-bold text-zinc-900 dark:text-white font-sans">
+                    Attendance Verification
+                  </h2>
+                  <p className="text-[10px] text-zinc-400">
+                    ID: {selectedRecord.id} &bull; {selectedRecord.clockIn}
+                  </p>
+                </div>
+                <button 
+                  onClick={handleCloseModal}
+                  className="p-1.5 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+                >
+                  <X className="h-4.5 w-4.5" />
+                </button>
               </div>
-              <button 
-                onClick={handleCloseModal}
-                className="p-1.5 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
 
-            {/* Profile Overview */}
-            <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-zinc-50/50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-850 mb-5">
-              <div className="h-11 w-11 rounded-full bg-indigo-100 dark:bg-zinc-800 text-[#282d8d] dark:text-indigo-400 font-extrabold flex items-center justify-center shadow-inner text-sm shrink-0">
-                {selectedRecord.avatarInitials}
+              {/* Profile Overview */}
+              <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-zinc-50/50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-850 mb-5">
+                <div className="h-11 w-11 rounded-full bg-indigo-100 dark:bg-zinc-800 text-[#282d8d] dark:text-indigo-400 font-extrabold flex items-center justify-center shadow-inner text-sm shrink-0">
+                  {selectedRecord.avatarInitials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-extrabold text-zinc-900 dark:text-white truncate">
+                    {selectedRecord.name}
+                  </h4>
+                  <p className="text-[10px] text-zinc-400 truncate">{selectedRecord.role}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                    selectedRecord.status === "Present" ? "bg-emerald-50 text-emerald-600" :
+                    selectedRecord.status === "Late" ? "bg-amber-50 text-amber-600" :
+                    selectedRecord.status === "Absent" ? "bg-red-50 text-red-600" :
+                    "bg-blue-50 text-blue-600"
+                  }`}>
+                    {selectedRecord.status}
+                  </span>
+                  <span className="text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full truncate max-w-[130px]">
+                    {selectedRecord.shift}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-extrabold text-zinc-900 dark:text-white truncate">
-                  {selectedRecord.name}
-                </h4>
-                <p className="text-[10px] text-zinc-400 truncate">{selectedRecord.role}</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <span className={`text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
-                  selectedRecord.status === "Present" ? "bg-emerald-50 text-emerald-600" :
-                  selectedRecord.status === "Late" ? "bg-amber-50 text-amber-600" :
-                  selectedRecord.status === "Absent" ? "bg-red-50 text-red-600" :
-                  "bg-blue-50 text-blue-600"
-                }`}>
-                  {selectedRecord.status}
-                </span>
-                <span className="text-[9px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full truncate max-w-[130px]">
-                  {selectedRecord.shift}
-                </span>
-              </div>
-            </div>
 
-            {/* Modal Body / Multi-State view */}
-            <div className="flex-1 overflow-y-auto pr-1">
-              {!isEditing ? (
-                /* Verification Details (Screenshot 2 view) */
+              {/* Modal Body — Verification Details (Read-Only) */}
+              <div className="flex-1 overflow-y-auto pr-1">
                 <div className="grid gap-6 md:grid-cols-2">
                   
                   {/* Live Capture (Selfie) */}
@@ -681,124 +679,133 @@ export const Attendance = () => {
                   </div>
 
                 </div>
-              ) : (
-                /* Edit Correction Form (Standard Indonesian Koreksi Kehadiran flow) */
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    
-                    {/* Status Select */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Ubah Status</label>
-                      <select 
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value as any)}
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2.5 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="Present">Present (Hadir)</option>
-                        <option value="Late">Late (Terlambat)</option>
-                        <option value="Absent">Absent (Mangkir)</option>
-                        <option value="On Leave">On Leave (Cuti / Izin)</option>
-                      </select>
-                    </div>
+              </div>
 
-                    {/* Clock In */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Masuk (Clock In)</label>
-                      <input 
-                        type="text" 
-                        value={editClockIn}
-                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
-                        onChange={(e) => setEditClockIn(e.target.value)}
-                        placeholder="e.g. 08:00 AM"
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
-                      />
-                    </div>
+              {/* Modal Actions */}
+              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end gap-2.5">
+                <button 
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+                >
+                  Close
+                </button>
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                >
+                  <FileEdit className="h-4 w-4" />
+                  <span>Edit Attendance</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Edit Attendance Modal (Mockup style - ONLY Check-in / Check-out editable) */
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[95vh] transition-transform duration-200 scale-100">
+              {/* Modal Header */}
+              <div className="flex items-start justify-between pb-4">
+                <div>
+                  <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Edit Attendance</h2>
+                  <p className="text-xs text-amber-500 dark:text-amber-400 font-semibold mt-0.5">
+                    Changes will affect overtime and payroll
+                  </p>
+                </div>
+                <button 
+                  onClick={handleCloseModal}
+                  className="p-1.5 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 rounded-full text-zinc-400 hover:text-zinc-650 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-                    {/* Clock Out */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Jam Pulang (Clock Out)</label>
-                      <input 
-                        type="text" 
-                        value={editClockOut}
-                        disabled={editStatus === "Absent" || editStatus === "On Leave"}
-                        onChange={(e) => setEditClockOut(e.target.value)}
-                        placeholder="e.g. 17:00 PM"
-                        className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
-                      />
-                    </div>
+              {/* Employee Detail Card - Read Only */}
+              <div className="bg-zinc-50 dark:bg-zinc-850/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800/80 grid grid-cols-2 gap-y-4 gap-x-2 text-xs mb-5">
+                <div>
+                  <p className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Employee Name</p>
+                  <p className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-455 font-bold uppercase tracking-wider">Job Title</p>
+                  <p className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5 truncate">{selectedRecord.role}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Shift</p>
+                  <p className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">{selectedRecord.shift}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">Date</p>
+                  <p className="font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
+                    {new Date(selectedRecord.createdAt || Date.now()).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                </div>
+              </div>
 
-                  </div>
-
-                  {/* Correction Reason */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Alasan Koreksi (Reason for Correction)</label>
-                    <textarea 
-                      value={editReason}
-                      onChange={(e) => setEditReason(e.target.value)}
-                      placeholder="Tulis alasan koreksi absen disini... (wajib diisi)"
-                      rows={4}
-                      className="w-full bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              {/* Editable Fields - Check-in and Check-out Times */}
+              <div className="grid grid-cols-2 gap-4 mb-5">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-350">Check-in Time</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                    <input 
+                      type="text"
+                      value={editClockIn}
+                      onChange={(e) => setEditClockIn(e.target.value)}
+                      placeholder="e.g. 08:00 AM"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-zinc-800 dark:text-zinc-100"
                     />
                   </div>
-
-                  {selectedRecord.correctionReason && (
-                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-150 dark:border-zinc-800">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase">Riwayat Alasan Koreksi Sebelumnya:</span>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 italic">
-                        "{selectedRecord.correctionReason}"
-                      </p>
-                    </div>
-                  )}
-
                 </div>
-              )}
-            </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-350">Check-out Time</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                    <input 
+                      type="text"
+                      value={editClockOut}
+                      onChange={(e) => setEditClockOut(e.target.value)}
+                      placeholder="e.g. 05:00 PM"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 text-zinc-800 dark:text-zinc-100"
+                    />
+                  </div>
+                </div>
+              </div>
 
-            {/* Modal Actions */}
-            <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 mt-5 flex items-center justify-end gap-2.5">
-              {!isEditing ? (
-                <>
-                  <button 
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
-                  >
-                    Close
-                  </button>
-                  <button 
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1.5 px-4 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
-                  >
-                    <FileEdit className="h-4 w-4" />
-                    <span>Edit Attendance</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
-                  >
-                    Kembali (Back)
-                  </button>
-                  <button 
-                    onClick={handleSaveCorrection}
-                    disabled={correctionMutation.isPending}
-                    className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md shadow-green-900/10 disabled:opacity-60"
-                  >
-                    {correctionMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4" />
-                    )}
-                    <span>Simpan Koreksi (Save Correction)</span>
-                  </button>
-                </>
-              )}
+              {/* Warning Alert Note Banner */}
+              <div className="bg-blue-50/50 dark:bg-indigo-950/20 border border-blue-100 dark:border-indigo-900/50 p-4 rounded-xl flex items-start gap-2.5 text-blue-600 dark:text-indigo-400 text-[11px] mb-5">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-blue-500 dark:text-indigo-400" />
+                <p className="leading-relaxed font-semibold">
+                  Note: Overtime and payroll calculations will be automatically updated based on the new timestamps provided above.
+                </p>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex items-center gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="px-6 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveCorrection}
+                  disabled={correctionMutation.isPending}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#282d8d] hover:bg-indigo-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm disabled:opacity-60"
+                >
+                  {correctionMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  <span>Save</span>
+                </button>
+              </div>
+
             </div>
+          )}
 
           </div>
-        </div>
-      )}
+        )}
 
       {/* Image-Only Lightbox (View Photo) */}
       {photoRecord && (
