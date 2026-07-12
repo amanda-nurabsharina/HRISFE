@@ -1,8 +1,9 @@
 # Build Stage
 FROM node:22-alpine AS build
+ENV CYPRESS_INSTALL_BINARY=0
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-audit --no-fund
 COPY . .
 RUN npm run build
 
