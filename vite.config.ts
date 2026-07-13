@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     react(),
     isDevMode && inspect(),
   ];
-  if (!isTestMode) {
+  if (isDevMode && !isTestMode) {
     // READ-MORE: https://github.com/fi3ework/vite-plugin-checker
     plugins.push(
       checker({

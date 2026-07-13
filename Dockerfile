@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --no-audit --no-fund
 COPY . .
-RUN NODE_OPTIONS="--max-old-space-size=1024" npx vite build --sourcemap false
+RUN NODE_OPTIONS="--max-old-space-size=512" npx vite build --sourcemap false
 
 # Production Stage (Nginx)
 FROM nginx:stable-alpine
