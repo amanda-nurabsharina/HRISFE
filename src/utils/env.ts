@@ -4,7 +4,11 @@ export const getEnvValue = (key: string): string => {
 };
 
 export const apiURL = (path = "") => {
-  return new URL(path, getEnvValue("VITE_API_URL"));
+  let baseUrl = getEnvValue("VITE_API_URL");
+  if (baseUrl && !baseUrl.endsWith("/")) {
+    baseUrl += "/";
+  }
+  return new URL(path, baseUrl);
 };
 
 export const isProduction = !window?.Cypress && import.meta.env.MODE === "production";
