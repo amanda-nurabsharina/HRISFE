@@ -10,6 +10,11 @@ export const Route = createFileRoute("/")({
         to: "/app",
         throw: true,
       });
+    } else {
+      redirect({
+        to: "/auth/login",
+        throw: true,
+      });
     }
   },
   component: () => (
