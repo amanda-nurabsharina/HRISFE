@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
         autoCodeSplitting: true,
       }),
     react(),
-    inspect(),
+    isDevMode && inspect(),
   ];
   if (!isTestMode) {
     // READ-MORE: https://github.com/fi3ework/vite-plugin-checker
