@@ -82,6 +82,7 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "dist",
       sourcemap: true,
+      reportCompressedSize: false,
       // READ-MORE:  https://vitejs.dev/config/build-options#build-target
       target: browserslistToEsbuild(),
     },
